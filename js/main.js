@@ -1,95 +1,191 @@
 
-// 等整個網頁 HTML 都載入完成後，再開始抓元素（避免抓不到）
+
 document.addEventListener("DOMContentLoaded", function () {
 
-    // 抓到所有 FAQ 的問題按鈕（class = faq-question）
-    const questionButtons = document.querySelectorAll(".faq-question");
+    // ===== 你可以在這裡調整行為 =====
+    const ONLY_ONE_OPEN = true;           // true = 一次只開一題；false = 可同時開很多題
+    const AUTO_CLOSE_HIDDEN_ITEMS = true; // 搜尋後把被隱藏的題目自動關起來
+    const SEARCH_DELAY = 150;             // debounce 延遲（毫秒）
 
-    // 逐一替每個按鈕加上「點擊事件」
-    questionButtons.forEach(function (btn) {
+    // ===== 抓元素 =====
+    const faqSection = document.querySelector(".faq-section"); // FAQ 區塊
+    const items = document.querySelectorAll(".faq-item");      // 每一題容器
+    const searchInput = document.getElementById("faqSearch");  // 搜尋框
 
-        // 當使用者點這個按鈕時，會執行下面這段
-        btn.addEventListener("click", function () {
+    // 若頁面沒有 FAQ，就不做任何事（避免其他頁面報錯）
+    if (!faqSection || items.length === 0) return;
 
-            // btn 的上一層容器就是 .faq-item（我們要在它身上加/刪 open）
-            const item = btn.closest(".faq-item");
+    // ===== 建立「沒有結果」提示文字 =====
+    const noResult = document.createElement("p");
+    noResult.className = "faq-no-result";
+    noResult.textContent = "No results found. Try different keywords.";
+    noResult.style.display = "none";
+    faqSection.appendChild(noResult);
 
-            // 找到這一題對應的答案區塊 .faq-answer
-            const answer = item.querySelector(".faq-answer");
-
-            // 判斷：這題目前是不是已經開著？
-            const isOpen = item.classList.contains("open");
-
-            // ======（可選）一次只開一題：先把其他題都關掉 ======
-            document.querySelectorAll(".faq-item.open").forEach(function (openItem) {
-
-                // 如果是別題（不是自己），就關掉
-                if (openItem !== item) {
-                    openItem.classList.remove("open");                           // 移除 open 樣式
-                    const openBtn = openItem.querySelector(".faq-question");      // 找到那題按鈕
-                    const openAns = openItem.querySelector(".faq-answer");        // 找到那題答案
-                    openBtn.setAttribute("aria-expanded", "false");               // 無障礙屬性：關
-                    openAns.hidden = true;                                        // 隱藏答案
-                }
-            });
-            // ======（可選）一次只開一題：結束 ======
-
-            // 如果原本是開著 -> 這次就關掉
-            if (isOpen) {
-                item.classList.remove("open");              // 移除 open
-                btn.setAttribute("aria-expanded", "false"); // aria-expanded 改 false
-                answer.hidden = true;                       // 隱藏答案
-            }
-            // 如果原本是關著 -> 這次就打開
-            else {
-                item.classList.add("open");                 // 加上 open
-                btn.setAttribute("aria-expanded", "true");  // aria-expanded 改 true
-                answer.hidden = false;                      // 顯示答案
-            }
-
-        });
-
-    });
-
-});
-
-
-// ===== FAQ Accordion (click to toggle) =====
-console.log("main.js loaded!");
-document.querySelectorAll(".faq-question").forEach(function (btn) {
-    btn.addEventListener("click", function () {
-        const item = btn.closest(".faq-item");
+    // ===== 小工具：設定某一題「開」或「關」 =====
+    function setItemOpen(item, shouldOpen) {
+        const btn = item.querySelector(".faq-question");
         const answer = item.querySelector(".faq-answer");
         const icon = item.querySelector(".faq-icon");
 
-        const isHidden = answer.hasAttribute("hidden");
+        if (!btn || !answer) return;
 
-        // 切換 hidden
-        if (isHidden) {
-            answer.removeAttribute("hidden");
-            icon.textContent = "▴";
+        if (shouldOpen) {
+            item.classList.add("open");
+            btn.setAttribute("aria-expanded", "true");
+            answer.hidden = false;
+            if (icon) icon.textContent = "▴";
         } else {
-            answer.setAttribute("hidden", "");
-            icon.textContent = "▾";
+            item.classList.remove("open");
+            btn.setAttribute("aria-expanded", "false");
+            answer.hidden = true;
+            if (icon) icon.textContent = "▾";
         }
-    });
-});
+    }
 
-// ===== FAQ Search Filter =====
-const searchInput = document.getElementById("faqSearch");
+    // ===== 小工具：關掉全部題目 =====
+    function closeAllItems(exceptItem) {
+        items.forEach(function (it) {
+            if (exceptItem && it === exceptItem) return;
+            setItemOpen(it, false);
+        });
+    }
 
-if (searchInput) {
-    searchInput.addEventListener("input", function () {
-        const keyword = searchInput.value.toLowerCase().trim();
+    // ===== 初始化：補上 aria-controls / id，並把每題預設關起來 =====
+    items.forEach(function (item, index) {
+        const btn = item.querySelector(".faq-question");
+        const answer = item.querySelector(".faq-answer");
 
-        document.querySelectorAll(".faq-item").forEach(function (item) {
-            const text = item.innerText.toLowerCase();
+        if (!btn || !answer) return;
 
-            if (text.includes(keyword)) {
-                item.style.display = "";
-            } else {
-                item.style.display = "none";
+        // 給答案一個唯一 id（如果原本沒有）
+        if (!answer.id) {
+            answer.id = "faq-answer-" + (index + 1);
+        }
+
+        // 讓按鈕知道它控制哪個答案（無障礙用）
+        btn.setAttribute("aria-controls", answer.id);
+
+        // 預設都關起來（確保狀態一致）
+        setItemOpen(item, false);
+
+        // 點擊：切換開關
+        btn.addEventListener("click", function () {
+            const isOpen = item.classList.contains("open");
+
+            if (ONLY_ONE_OPEN) {
+                closeAllItems(item);
+            }
+
+            setItemOpen(item, !isOpen);
+        });
+
+        // 鍵盤：Enter / Space 也能切換
+        btn.addEventListener("keydown", function (e) {
+            if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                btn.click();
             }
         });
     });
-}
+
+    // ===== debounce：避免每打 1 個字就跑一次過濾（更順） =====
+    function debounce(fn, delay) {
+        let timer = null;
+        return function () {
+            const args = arguments;
+            clearTimeout(timer);
+            timer = setTimeout(function () {
+                fn.apply(null, args);
+            }, delay);
+        };
+    }
+
+    // ===== 搜尋高亮：先把原始文字存起來（只做一次） =====
+    items.forEach(function (item) {
+        const qText = item.querySelector(".faq-q-text");
+        const aP = item.querySelector(".faq-answer p"); // 你現在答案都是 <p>，先用這個最簡單
+
+        if (qText && !qText.dataset.original) {
+            qText.dataset.original = qText.textContent;
+        }
+        if (aP && !aP.dataset.original) {
+            aP.dataset.original = aP.textContent;
+        }
+    });
+
+    // 把特殊字元跳脫，避免 regex 壞掉（例如輸入 ? . *）
+    function escapeRegExp(str) {
+        return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    }
+
+    // 把 keyword 用 <mark> 上底色
+    function highlightText(originalText, keyword) {
+        if (!keyword) return originalText;
+        const safe = escapeRegExp(keyword);
+        const regex = new RegExp(`(${safe})`, "gi");
+        return originalText.replace(regex, "<mark>$1</mark>");
+    }
+
+    // ===== 搜尋：過濾 + 高亮 =====
+    function filterFAQ(keyword) {
+        const k = keyword.toLowerCase().trim();
+        let visibleCount = 0;
+
+        items.forEach(function (item) {
+            const qText = item.querySelector(".faq-q-text");
+            const aP = item.querySelector(".faq-answer p");
+
+            // 先還原成原始文字（清掉上一次的 mark）
+            if (qText && qText.dataset.original) {
+                qText.innerHTML = qText.dataset.original;
+            }
+            if (aP && aP.dataset.original) {
+                aP.innerHTML = aP.dataset.original;
+            }
+
+            // 空字串：全部顯示、不要高亮
+            if (k === "") {
+                item.style.display = "";
+                visibleCount += 1;
+                return;
+            }
+
+            // 用原始文字比對
+            const qOriginal = qText && qText.dataset.original ? qText.dataset.original : "";
+            const aOriginal = aP && aP.dataset.original ? aP.dataset.original : "";
+            const combined = (qOriginal + " " + aOriginal).toLowerCase();
+
+            const matched = combined.includes(k);
+
+            if (matched) {
+                item.style.display = "";
+                visibleCount += 1;
+
+                // 高亮：問題 + 答案都上底色
+                if (qText) qText.innerHTML = highlightText(qOriginal, k);
+                if (aP) aP.innerHTML = highlightText(aOriginal, k);
+
+            } else {
+                item.style.display = "none";
+
+                if (AUTO_CLOSE_HIDDEN_ITEMS) {
+                    setItemOpen(item, false);
+                }
+            }
+        });
+
+        noResult.style.display = visibleCount === 0 ? "" : "none";
+    }
+
+    // ===== 綁定搜尋事件（你剛剛少掉的就是這段） =====
+    if (searchInput) {
+        searchInput.addEventListener(
+            "input",
+            debounce(function () {
+                filterFAQ(searchInput.value);
+            }, SEARCH_DELAY)
+        );
+    }
+
+});
