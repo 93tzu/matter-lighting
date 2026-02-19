@@ -263,7 +263,7 @@ footer {
     cursor: pointer;
     display: flex;
     align-items: center;
-    justify-content: space-between;
+
     border-left: 6px solid #111; /* 左邊黑色粗條（對比強） */
 }
 
@@ -2295,3 +2295,198 @@ html, body{
     font-size: 18px;
     color: #666;
 }
+
+
+
+
+
+/* ✅ 每張卡片寬度固定（置中），高度自然長（隨字數/答案長度變） */
+.faq-item{
+    width: min(900px, 100%);   /* 固定卡片寬度：最大 900px，手機就 100% */
+    margin: 18px auto;         /* 置中 */
+    box-sizing: border-box;
+}
+
+/* ✅ 問題按鈕永遠滿寬（不會因字少就變窄） */
+.faq-question{
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-sizing: border-box;
+
+    /* 重要：不要寫死 height，讓高度隨文字換行自然變高 */
+    height: auto;
+    padding: 18px 18px;
+}
+
+/* ✅ 題目文字：允許換行（行數多就自然變高） */
+.faq-q-text{
+    white-space: normal;       /* 允許換行 */
+    overflow-wrap: anywhere;   /* 很長的字也能斷行，避免爆版 */
+}
+
+/* ✅ icon 靠右 */
+.faq-icon{
+    margin-left: auto;
+}
+
+
+
+
+
+
+/* ===== Fix FAQ question bar width + wrap to height ===== */
+
+/* 白色卡片固定滿寬 */
+.faq-item{
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* 灰色問題條：永遠滿寬，不會因字數變窄 */
+.faq-question{
+    width: 100% !important;
+    display: flex !important;
+    align-items: center;
+    box-sizing: border-box;
+}
+
+/* 左邊「Q + 文字」這塊要可以縮放，才不會把寬度搞怪 */
+.faq-q-left{
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1 1 auto;     /* ✅ 讓它吃滿剩下空間 */
+    min-width: 0;       /* ✅ 超重要：不加會導致內容把容器撐爆/行為怪 */
+}
+
+/* 文字：允許換行 => 字多就長高（高度自然變大） */
+.faq-q-text{
+    white-space: normal;        /* ✅ 允許換行 */
+    overflow-wrap: anywhere;    /* ✅ 超長字也能斷行 */
+}
+
+/* icon 永遠靠右、不要被擠走 */
+.faq-icon{
+    margin-left: auto;
+    flex: 0 0 auto;
+}
+
+
+
+
+
+
+
+
+/* 問題（button） */
+.faq-question {
+    width: 100%;
+    text-align: left;
+    border: none;
+    background: #f7f7f7;        /* 淡灰底（問題區） */
+    padding: 18px 20px;
+    font-size: 20px;
+    font-weight: 800;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+
+    border-left: 6px solid #111; /* 左邊黑色粗條（對比強） */
+}
+
+
+
+/* 搜尋關鍵字高亮 */
+mark {
+    background-color: #ffe96b;
+    padding: 0 3px;
+    border-radius: 3px;
+}
+
+
+
+/* ===== Header RWD Fix ===== */
+
+/* 1) header 變成彈性排版，可換行 */
+header{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;           /* ✅ 關鍵：小螢幕可以換行 */
+    gap: 12px;
+    padding: 14px 24px;
+    box-sizing: border-box;
+}
+
+/* 2) logo 區不要被擠爆 */
+header .logo{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 0 0 auto;
+}
+
+/* 3) nav 區可縮放 */
+header nav{
+    flex: 1 1 auto;            /* ✅ 可縮可長 */
+    min-width: 260px;          /* ✅ 太窄就自動換行到下一排 */
+}
+
+/* 4) menu 允許換行（避免硬擠在一行爆版） */
+header nav ul{
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;           /* ✅ 關鍵：menu 可以換行 */
+    gap: 18px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+/* ===== Breakpoints ===== */
+
+/* 平板：nav 換到下一行並置中 */
+@media (max-width: 900px){
+    header{
+        padding: 14px 16px;
+    }
+    header nav{
+        flex-basis: 100%;        /* ✅ nav 直接佔滿一行 */
+        min-width: 0;
+    }
+    header nav ul{
+        justify-content: center; /* ✅ 置中比較好看 */
+        gap: 14px;
+    }
+}
+
+/* 手機：字變小、間距縮小 */
+@media (max-width: 520px){
+    header nav ul{
+        gap: 10px;
+    }
+    header nav a{
+        font-size: 14px;
+    }
+    header .logo span{
+        font-size: 14px;
+    }
+}
+
+
+
+
+
+
+
+
+
+mark{
+    background: #ffe96b;
+    padding: 0 3px;
+    border-radius: 3px;
+}
+
+
